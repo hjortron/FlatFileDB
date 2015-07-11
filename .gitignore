@@ -1,0 +1,8 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/DBClient/bin/Debug
+/DBClient/obj/Debug
+/FlatFileDB/bin/Debug
+/FlatFileDB/obj/Debug
