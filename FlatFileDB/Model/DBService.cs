@@ -11,12 +11,12 @@ namespace FlatFileDB.Model
     [Serializable]
     public class DBService
     {
-        const int FILE_SIZE = 1024 * 1024 * 2;
-        private int _recordsCount;
+        const int FILE_SIZE = 1024 * 1024 * 20;
+        private long _recordsCount;
         private int _tablesCount;
         private Dictionary<int, List<long>> _sourceIds;
         private Dictionary<int, List<long>> _sourceTypes;
-        private Dictionary<string, long[]> _tables;
+        private LinkedList<long> _tables;
 
         [NonSerialized]
         private TableInfo _currentFile;
@@ -25,7 +25,7 @@ namespace FlatFileDB.Model
         {
             if (File.Exists("dbInf.dbi"))
             {
-                var dbInf = Tools.Deserialize<DBService>("dbInf.dbi");
+                var dbInf = (DBService)Tools.Deserialize("dbInf.dbi");
                 _recordsCount = dbInf._recordsCount;
                 _sourceIds = dbInf._sourceIds;
                 _sourceTypes = dbInf._sourceTypes;
@@ -36,46 +36,46 @@ namespace FlatFileDB.Model
             {
                 _sourceIds = new Dictionary<int, List<long>>();
                 _sourceTypes = new Dictionary<int, List<long>>();
-                _tables = new Dictionary<string, long[]>();
+                _tables = new LinkedList<long>();
             }
 
-            _currentFile = new TableInfo(String.Format("table{0}.ftd", _tablesCount), _recordsCount);
+            _currentFile = new TableInfo(GetFileName(_tablesCount++), _recordsCount); 
         }
 
         public void CreateFile()
-        {
-            _currentFile = new TableInfo(String.Format("table{0}.ftd", _tablesCount), _recordsCount);
+        {         
+            _currentFile = new TableInfo(GetFileName(_tablesCount++), _recordsCount);
         }
 
         public void AddRecord(int sourceId, int sourceType, byte[] data)
         {
-            var record = new Record(_recordsCount++, sourceId, sourceType, data);
+            var record = new Record(sourceId, sourceType, data);
 
-            if (_currentFile.Length + data.Length > FILE_SIZE)
-            {
-                Console.WriteLine("{0}, {1}", _currentFile.Length, FILE_SIZE);
+            if (_currentFile.Length + record.ToByteArray().Length > FILE_SIZE)
+            {            
                 FlushData();
+                CreateFile();
             }
 
+            var id = _currentFile._startOffset + _currentFile.Write(record);
+             ++_recordsCount;
             if (_sourceIds.ContainsKey(record.sourceId))
             {
-                _sourceIds[record.sourceId].Add(record.recordId);
+                _sourceIds[record.sourceId].Add(id);
             }
             else
             {
-                _sourceIds.Add(record.sourceId, new List<long> { record.recordId });
+                _sourceIds.Add(record.sourceId, new List<long> { id });
             }
 
             if (_sourceTypes.ContainsKey(record.sourceType))
             {
-                _sourceTypes[record.sourceType].Add(record.recordId);
+                _sourceTypes[record.sourceType].Add(id);
             }
             else
             {
-                _sourceTypes.Add(record.sourceType, new List<long> { record.recordId });
-            }
-
-            _currentFile.Write(record);
+                _sourceTypes.Add(record.sourceType, new List<long> { id });
+            }           
         }
 
         public IEnumerable<IRecord> Read(string query)
@@ -104,40 +104,50 @@ namespace FlatFileDB.Model
             }
 
             var diction = GetRecords(idsList);
+            
             var result = new List<Record>();
-            foreach(var file in diction)
+            foreach (var file in diction)
             {
-                result.AddRange(GetRecordsFromFile(file.Key, file.Value));
+                result.AddRange(GetTable(file.Key).GetRecords(file.Value));
             }
             return result;
         }
 
-        private Dictionary<string, List<long>> GetRecords(IEnumerable<long> recordsIds)
+        private TableInfo GetTable(int tableIndex)
         {
-            Array.Sort(recordsIds.ToArray());
-            var resultDictionary = new Dictionary<string, List<long>>();
-            foreach (var id in recordsIds)
+            if (tableIndex == -1)
             {
-                var fileName = _tables.FirstOrDefault(x => x.Value[0] >= id && x.Value[1] <= id).Key;
-                if (resultDictionary.ContainsKey(fileName))
-                {
-                    resultDictionary[fileName].Add(id);
-                }
-                else
-                {
-                    resultDictionary.Add(fileName, new List<long> { id });
-                }
+                return _currentFile;
             }
-            return resultDictionary;
+            return new TableInfo(GetFileName(tableIndex), _tables.ElementAtOrDefault(tableIndex));
         }
 
-        private List<Record> GetRecordsFromFile(string fileName, IEnumerable<long> recordsIds)
+        private Dictionary<int, List<long>> GetRecords(List<long> recordsIds)
         {
-            var idsRange = _tables[fileName];
-            var file = new TableInfo(fileName, idsRange[0], idsRange[1]);
-            file.GetRecords(recordsIds);
-            return new List<Record>();
-        }
+            Array.Sort(recordsIds.ToArray());          
+            var resultDictionary = new Dictionary<int, List<long>>();
+            for (var i = 0; i < _tables.Count; i++ )
+            {
+                var offset = _tables.ElementAt(i);
+                var offsetNext = _tables.ElementAtOrDefault(i+1) == default(long) ? _currentFile._startOffset :_tables.ElementAtOrDefault(i+1) ;
+                var ids = recordsIds.Where(id => id >= offset && id < offsetNext);               
+                    if (resultDictionary.ContainsKey(i))
+                    {
+                        resultDictionary[i].AddRange(ids);
+                    }
+                    else
+                    {
+                        resultDictionary.Add(i, new List<long>(ids));
+                    }
+                    recordsIds.RemoveAll(e => ids.Contains(e));                
+            }
+            if (recordsIds.Count > 0)
+            {
+                resultDictionary.Add(-1, recordsIds);
+            }
+
+            return resultDictionary;
+        }        
 
         private void AddResultValues(ref List<long> resultArray, List<long> values)
         {
@@ -147,17 +157,20 @@ namespace FlatFileDB.Model
             }
             else
             {
-                resultArray.Intersect(values);
+                resultArray = resultArray.Intersect(values).ToList();
             }
+        }
+
+        public string GetFileName(int fileN)
+        {
+            return String.Format("table{0}.ftd", fileN);
         }
 
         public void FlushData()
         {
-            _tables.Add(_currentFile._fileName, new[] { _currentFile._startPos, _currentFile._startPos });
-            Tools.Serialize("dbInf.dbi", this);
-            ++_tablesCount;
-            //_currentFile.SaveFile();
-            CreateFile();
+            _tables.AddLast(_currentFile._startOffset);            
+            Tools.Serialize("dbInf.dbi", this);            
+            _currentFile.SaveFile();           
         }
     }
 }

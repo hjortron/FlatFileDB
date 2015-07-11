@@ -1,7 +1,9 @@
-﻿using System;
+﻿using FlatFileDB.Model;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,7 +22,7 @@ namespace FlatFileDB
             }
         }
 
-        public static void Serialize<T>(string fileName, T obj)
+        public static void Serialize(string fileName, object obj)
         {
             var binFormat = new BinaryFormatter();
             using (var fStream = new FileStream(fileName,
@@ -30,14 +32,35 @@ namespace FlatFileDB
             }
         }
 
-        public static T Deserialize<T>(string filePath)
+        public static object Deserialize(string filePath)
         {
-            var binFormat = new BinaryFormatter();
-            using (var fStream = new FileStream(filePath,
-               FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            var fs = new FileStream(filePath, FileMode.Open);
+            try
             {
-                return (T)binFormat.Deserialize(fStream);              
+                var formatter = new BinaryFormatter();
+
+                
+                return formatter.Deserialize(fs);
             }
+            catch (SerializationException e)
+            {
+                Console.WriteLine("Failed to deserialize. Reason: " + e.Message);
+                throw;
+            }
+            finally
+            {
+                fs.Close();
+            }           
+        }
+
+        public static Record FromByteArray(byte[] arrBytes)
+        {
+            var memStream = new MemoryStream();
+            var binForm = new BinaryFormatter();
+            memStream.Write(arrBytes, 0, arrBytes.Length);
+            memStream.Seek(0, SeekOrigin.Begin);
+            var record = (Record)binForm.Deserialize(memStream);
+            return record;
         }
     }
 }

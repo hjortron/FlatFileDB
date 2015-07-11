@@ -11,66 +11,71 @@ namespace FlatFileDB.Model
     [Serializable]
     class TableInfo
     {
-        public long _startPos;
-        public long _endPos;
+        public List<long> recordsPositions;
+        public long _startOffset;
         public string _fileName;
 
         [NonSerialized]
-        private StreamWriter _fileContent;
+        private MemoryStream _fileContent;
 
         public long Length
         {
-            get { return _fileContent.BaseStream.Length; }
+            get { return _fileContent.Length; }
         }
 
-        public TableInfo(string fileName, long startPos, long? endPos = null)
+        public TableInfo(string fileName, long startPos)
         {
-            var stream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite);            
-            _fileContent = new StreamWriter(stream);            
-            _startPos = startPos;
-            _endPos = endPos == null ? startPos : (long)endPos;
-            _fileName = fileName;
+            if (File.Exists(fileName + ".fti"))
+            {
+                var tableInf = (TableInfo)Tools.Deserialize(fileName + ".fti");
+                recordsPositions = tableInf.recordsPositions;
+                _startOffset = tableInf._startOffset;
+                _fileName = tableInf._fileName;
+            }
+            else
+            {
+                recordsPositions = new List<long>();
+                _startOffset = startPos;
+                _fileName = fileName;
+            }
+            _fileContent = new MemoryStream();
+            new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite).CopyToAsync(_fileContent);
         }
 
-        public void Write(Record record)
-        {
-            _fileContent.WriteLine(record);
-            _endPos = record.recordId;
+        public int Write(Record record)
+        {             
+            recordsPositions.Add(_fileContent.Position);
+            var recordAsByteArr = record.ToByteArray();
+            _fileContent.Write(recordAsByteArr, 0, recordAsByteArr.Length);
+            return recordsPositions.Count - 1;
         }
 
         public void SaveFile()
         {
-            //Tools.Serialize(_fileName + ".fti", this);
+            _fileContent.WriteTo(new FileStream(_fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite));
+            _fileContent.Close();
+            Tools.Serialize(_fileName + ".fti", this);
         }
 
-        internal void GetRecords(IEnumerable<long> recordsIds)
+        internal IEnumerable<Record> GetRecords(IEnumerable<long> recordsPos)
         {
-            var result = new List<Record>();         
-            foreach(var id in recordsIds)
-            {               
-                using (var b = new BinaryReader(_fileContent.BaseStream))
-                {
-                    // 2.
-                    // Position and length variables.
-                    //_fileContent.BaseStream.Position = id - _startPos;                  
-                    int pos = 0;
-                    // 2A.
-                    // Use BaseStream.
-                    var length = b.BaseStream.Length;
-                    while (pos < length)
-                    {
-                        // 3.
-                        // Read integer.
-                        var v = b.ReadString();
-                        Console.WriteLine(v);
+            var result = new List<Record>();
+            var b = new BinaryReader(_fileContent);
 
-                        // 4.
-                        // Advance our position variable.
-                        pos += sizeof(int);
-                    }
+            foreach (var id in recordsPos)
+            {
+                var index = (int)(id - _startOffset);
+                var recordPos = recordsPositions.ElementAt((int)index);
+                if (b.BaseStream.Length > recordPos)
+                {
+                    var bytesCount = recordsPositions[index + 1] - recordPos;
+                    _fileContent.Position = recordPos;
+                    b.BaseStream.Seek(recordPos, SeekOrigin.Begin);
+                    var v = b.ReadBytes((int)bytesCount);
+                    Console.WriteLine(Tools.FromByteArray(v));
                 }
-               // Console.WriteLine(line);
             }
+            return result;
         }
     }
 }
