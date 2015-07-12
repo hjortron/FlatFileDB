@@ -5,6 +5,7 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Hosting;
 using Owin;
+using System.Linq;
 
 namespace FlatFileDB
 {
@@ -49,19 +50,24 @@ namespace FlatFileDB
 
         public void GetRecords(string query)
         {
-            var records = Program.dbService.Read(query);
-            Clients.Caller.WriteRecords(records);
+            var response = Program.dbService.Read(query);
+            if (response.Count == 0)
+            {
+                Clients.Caller.Response("No result");
+            }
+            else
+            {
+                response.ForEach(s => { Clients.All.Response(s); Console.WriteLine(s); });
+            }
         }
         public override Task OnConnected()
-        {
-            //Use Application.Current.Dispatcher to access UI thread from outside the MainWindow class
+        {          
             Console.WriteLine("Client connected: " + Context.ConnectionId);
 
             return base.OnConnected();
         }
         public void OnDisconnected()
-        {
-            //Use Application.Current.Dispatcher to access UI thread from outside the MainWindow class
+        {           
             Console.WriteLine("Client disconnected: " + Context.ConnectionId);            
         }
     }

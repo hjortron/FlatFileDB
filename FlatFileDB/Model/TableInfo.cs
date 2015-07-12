@@ -39,7 +39,7 @@ namespace FlatFileDB.Model
                 _fileName = fileName;
             }
             _fileContent = new MemoryStream();
-            new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite).CopyToAsync(_fileContent);
+            new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite).CopyTo(_fileContent);
         }
 
         public int Write(Record record)
@@ -57,9 +57,9 @@ namespace FlatFileDB.Model
             Tools.Serialize(_fileName + ".fti", this);
         }
 
-        internal IEnumerable<Record> GetRecords(IEnumerable<long> recordsPos)
+        internal IEnumerable<string> GetRecords(IEnumerable<long> recordsPos)
         {
-            var result = new List<Record>();
+            var result = new List<string>();
             var b = new BinaryReader(_fileContent);
 
             foreach (var id in recordsPos)
@@ -72,7 +72,7 @@ namespace FlatFileDB.Model
                     _fileContent.Position = recordPos;
                     b.BaseStream.Seek(recordPos, SeekOrigin.Begin);
                     var v = b.ReadBytes((int)bytesCount);
-                    Console.WriteLine(Tools.FromByteArray(v));
+                    result.Add(Tools.FromByteArray(v).ToString());
                 }
             }
             return result;

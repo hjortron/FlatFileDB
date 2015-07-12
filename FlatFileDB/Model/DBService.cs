@@ -78,7 +78,7 @@ namespace FlatFileDB.Model
             }           
         }
 
-        public IEnumerable<IRecord> Read(string query)
+        public List<string> Read(string query)
         {
             var idsList = new List<long>();
             foreach (var element in query.ToLower().Split(new[] { " and " }, StringSplitOptions.RemoveEmptyEntries))
@@ -105,7 +105,7 @@ namespace FlatFileDB.Model
 
             var diction = GetRecords(idsList);
             
-            var result = new List<Record>();
+            var result = new List<string>();
             foreach (var file in diction)
             {
                 result.AddRange(GetTable(file.Key).GetRecords(file.Value));

@@ -22,18 +22,18 @@ namespace DBClient
         {
             Connection = new HubConnection("http://localhost:8080");
             Connection.Closed += Connection_Closed;
-            HubProxy = Connection.CreateHubProxy("MyHub");                    
+            HubProxy = Connection.CreateHubProxy("MyHub");
             try
             {
                 await Connection.Start();
             }
             catch (HttpRequestException)
             {
-                WriteMessage("Unable to connect to server: Start server before connecting clients.");            
+                WriteMessage("Unable to connect to server: Start server before connecting clients.");
                 return;
             }
 
-            WriteMessage("Connected to server\r");           
+            WriteMessage("Connected to server\r");
         }
 
         public static void StartSending()
@@ -57,25 +57,26 @@ namespace DBClient
 
         public static void SendRecord()
         {
-            var random = new Random(); 
+            var random = new Random();
             var dataLength = 128;
             byte[] array = new byte[dataLength * random.Next(1, 3)];
-            random.NextBytes(array);            
-            Client.HubProxy.Invoke("WriteRecord", random.Next(1, 1000), random.Next(1, 10), array);
-        }  
-        
+            random.NextBytes(array);
+            HubProxy.Invoke("WriteRecord", random.Next(1, 1000), random.Next(1, 10), array);
+        }
+
         public static void GetRecords()
         {
             var random = new Random();
             var randomQuery = String.Format("sourceid = {0} AND sourcetype = {1}", random.Next(1, 1000), random.Next(1, 10));
             WriteMessage("Get " + randomQuery);
-            Client.HubProxy.Invoke("GetRecords", randomQuery);
+            HubProxy.Invoke("GetRecords", randomQuery);
+            HubProxy.On<string>("Response", (message) => WriteMessage(String.Format("{0}\r", message)));
         }
 
         private static void WriteMessage(string message)
         {
             var dispatcher = Application.Current.Dispatcher;
-            dispatcher.Invoke(() => ((MainWindow)Application.Current.MainWindow).WriteToConsole(message));
+            dispatcher.Invoke(() =>((MainWindow)Application.Current.MainWindow).WriteToConsole(message));
         }
 
         private static void Connection_Closed()
