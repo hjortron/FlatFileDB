@@ -2,21 +2,18 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FlatFileDB.Model
 {
     [Serializable]
     class TableInfo
     {
-        public List<long> recordsPositions;
-        public long _startOffset;
-        public string _fileName;
+        private readonly List<long> _recordsPositions;
+        public readonly long StartOffset;
+        private readonly string _fileName;
 
         [NonSerialized]
-        private MemoryStream _fileContent;
+        private readonly MemoryStream _fileContent;
 
         public long Length
         {
@@ -28,14 +25,14 @@ namespace FlatFileDB.Model
             if (File.Exists(fileName + ".fti"))
             {
                 var tableInf = (TableInfo)Tools.Deserialize(fileName + ".fti");
-                recordsPositions = tableInf.recordsPositions;
-                _startOffset = tableInf._startOffset;
+                _recordsPositions = tableInf._recordsPositions;
+                StartOffset = tableInf.StartOffset;
                 _fileName = tableInf._fileName;
             }
             else
             {
-                recordsPositions = new List<long>();
-                _startOffset = startPos;
+                _recordsPositions = new List<long>();
+                StartOffset = startPos;
                 _fileName = fileName;
             }
             _fileContent = new MemoryStream();
@@ -44,10 +41,10 @@ namespace FlatFileDB.Model
 
         public int Write(Record record)
         {             
-            recordsPositions.Add(_fileContent.Position);
+            _recordsPositions.Add(_fileContent.Position);
             var recordAsByteArr = record.ToByteArray();
             _fileContent.Write(recordAsByteArr, 0, recordAsByteArr.Length);
-            return recordsPositions.Count - 1;
+            return _recordsPositions.Count - 1;
         }
 
         public void SaveFile()
@@ -64,11 +61,11 @@ namespace FlatFileDB.Model
 
             foreach (var id in recordsPos)
             {
-                var index = (int)(id - _startOffset);
-                var recordPos = recordsPositions.ElementAt((int)index);
+                var index = (int)(id - StartOffset);
+                var recordPos = _recordsPositions.ElementAt(index);
                 if (b.BaseStream.Length > recordPos)
                 {
-                    var bytesCount = recordsPositions[index + 1] - recordPos;
+                    var bytesCount = _recordsPositions[index + 1] - recordPos;
                     _fileContent.Position = recordPos;
                     b.BaseStream.Seek(recordPos, SeekOrigin.Begin);
                     var v = b.ReadBytes((int)bytesCount);

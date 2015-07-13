@@ -1,12 +1,8 @@
-﻿using FlatFileDB.Model;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
-using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
-using System.Threading.Tasks;
+using FlatFileDB.Model;
 
 namespace FlatFileDB
 {
@@ -16,7 +12,7 @@ namespace FlatFileDB
         {
             using (Stream stream = new MemoryStream())
             {
-                BinaryFormatter formatter = new BinaryFormatter();
+                var formatter = new BinaryFormatter();
                 formatter.Serialize(stream, obj);
                 return stream.Length;
             }
@@ -38,7 +34,6 @@ namespace FlatFileDB
             try
             {
                 var formatter = new BinaryFormatter();
-
                 
                 return formatter.Deserialize(fs);
             }

@@ -2,30 +2,27 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FlatFileDB.Model
 {
     [Serializable]
-    public class DBService
+    public class DbService
     {
-        const int FILE_SIZE = 1024 * 1024 * 20;
+        const int FileSize = 1024 * 1024 * 20;
         private long _recordsCount;
         private int _tablesCount;
-        private Dictionary<int, List<long>> _sourceIds;
-        private Dictionary<int, List<long>> _sourceTypes;
-        private LinkedList<long> _tables;
+        private readonly Dictionary<int, List<long>> _sourceIds;
+        private readonly Dictionary<int, List<long>> _sourceTypes;
+        private readonly LinkedList<long> _tables;
 
         [NonSerialized]
         private TableInfo _currentFile;
 
-        public DBService()
+        public DbService()
         {
             if (File.Exists("dbInf.dbi"))
             {
-                var dbInf = (DBService)Tools.Deserialize("dbInf.dbi");
+                var dbInf = (DbService)Tools.Deserialize("dbInf.dbi");
                 _recordsCount = dbInf._recordsCount;
                 _sourceIds = dbInf._sourceIds;
                 _sourceTypes = dbInf._sourceTypes;
@@ -42,7 +39,7 @@ namespace FlatFileDB.Model
             _currentFile = new TableInfo(GetFileName(_tablesCount++), _recordsCount); 
         }
 
-        public void CreateFile()
+        private void CreateFile()
         {         
             _currentFile = new TableInfo(GetFileName(_tablesCount++), _recordsCount);
         }
@@ -51,39 +48,38 @@ namespace FlatFileDB.Model
         {
             var record = new Record(sourceId, sourceType, data);
 
-            if (_currentFile.Length + record.ToByteArray().Length > FILE_SIZE)
+            if (_currentFile.Length + record.ToByteArray().Length > FileSize)
             {            
                 FlushData();
                 CreateFile();
             }
 
-            var id = _currentFile._startOffset + _currentFile.Write(record);
+            var id = _currentFile.StartOffset + _currentFile.Write(record);
              ++_recordsCount;
-            if (_sourceIds.ContainsKey(record.sourceId))
+            if (_sourceIds.ContainsKey(record.SourceId))
             {
-                _sourceIds[record.sourceId].Add(id);
+                _sourceIds[record.SourceId].Add(id);
             }
             else
             {
-                _sourceIds.Add(record.sourceId, new List<long> { id });
+                _sourceIds.Add(record.SourceId, new List<long> { id });
             }
 
-            if (_sourceTypes.ContainsKey(record.sourceType))
+            if (_sourceTypes.ContainsKey(record.SourceType))
             {
-                _sourceTypes[record.sourceType].Add(id);
+                _sourceTypes[record.SourceType].Add(id);
             }
             else
             {
-                _sourceTypes.Add(record.sourceType, new List<long> { id });
+                _sourceTypes.Add(record.SourceType, new List<long> { id });
             }           
         }
 
         public List<string> Read(string query)
         {
             var idsList = new List<long>();
-            foreach (var element in query.ToLower().Split(new[] { " and " }, StringSplitOptions.RemoveEmptyEntries))
+            foreach (var fieldQ in query.ToLower().Split(new[] { " and " }, StringSplitOptions.RemoveEmptyEntries).Select(element => element.Split(new[] { '=' }, StringSplitOptions.RemoveEmptyEntries)))
             {
-                var fieldQ = element.Split(new[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
                 switch (fieldQ[0].Trim())
                 {
                     case "sourceid":
@@ -129,7 +125,7 @@ namespace FlatFileDB.Model
             for (var i = 0; i < _tables.Count; i++ )
             {
                 var offset = _tables.ElementAt(i);
-                var offsetNext = _tables.ElementAtOrDefault(i+1) == default(long) ? _currentFile._startOffset :_tables.ElementAtOrDefault(i+1) ;
+                var offsetNext = _tables.ElementAtOrDefault(i+1) == default(long) ? _currentFile.StartOffset :_tables.ElementAtOrDefault(i+1) ;
                 var ids = recordsIds.Where(id => id >= offset && id < offsetNext);               
                     if (resultDictionary.ContainsKey(i))
                     {
@@ -149,9 +145,9 @@ namespace FlatFileDB.Model
             return resultDictionary;
         }        
 
-        private void AddResultValues(ref List<long> resultArray, List<long> values)
+        private static void AddResultValues(ref List<long> resultArray, IEnumerable<long> values)
         {
-            if (resultArray.Count() == 0)
+            if (!resultArray.Any())
             {
                 resultArray.AddRange(values);
             }
@@ -161,14 +157,14 @@ namespace FlatFileDB.Model
             }
         }
 
-        public string GetFileName(int fileN)
+        private static string GetFileName(int fileN)
         {
-            return String.Format("table{0}.ftd", fileN);
+            return string.Format("table{0}.ftd", fileN);
         }
 
         public void FlushData()
         {
-            _tables.AddLast(_currentFile._startOffset);            
+            _tables.AddLast(_currentFile.StartOffset);            
             Tools.Serialize("dbInf.dbi", this);            
             _currentFile.SaveFile();           
         }

@@ -5,13 +5,12 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Hosting;
 using Owin;
-using System.Linq;
 
 namespace FlatFileDB
 {
-    class Server
+    internal static class Server
     {
-        public static IDisposable SignalR { get; set; }
+        private static IDisposable SignalR { get; set; }
 
         public static void StartServer()
         {
@@ -29,10 +28,10 @@ namespace FlatFileDB
             //Dispatcher.Invoke(() => .buttonStop.IsEnabled = true));
             //Dispatcher.Invoke(() =>
             //((MainWindow)Application.Current.MainWindow).WriteToConsole("Server started at " + serverName));
-        }             
+        }
     }
- 
-    class Startup
+
+    internal class Startup
     {
         public void Configuration(IAppBuilder app)
         {
@@ -40,35 +39,37 @@ namespace FlatFileDB
             app.MapSignalR();
         }
     }
-    
+
     public class MyHub : Hub
-   {        
+    {
         public void WriteRecord(int sourceId, int sourceType, byte[] data)
-        {           
-            Program.dbService.AddRecord(sourceId, sourceType, data);
+        {
+            Program.DbService.AddRecord(sourceId, sourceType, data);
         }
 
         public void GetRecords(string query)
         {
-            var response = Program.dbService.Read(query);
-            if (response.Count == 0)
+            var result = Program.DbService.Read(query);
+            if (result.Count == 0)
             {
                 Clients.Caller.Response("No result");
             }
             else
             {
-                response.ForEach(s => { Clients.All.Response(s); Console.WriteLine(s); });
+                Clients.Caller.Response(result);
             }
         }
+
         public override Task OnConnected()
-        {          
+        {
             Console.WriteLine("Client connected: " + Context.ConnectionId);
 
             return base.OnConnected();
         }
+
         public void OnDisconnected()
-        {           
-            Console.WriteLine("Client disconnected: " + Context.ConnectionId);            
+        {
+            Console.WriteLine("Client disconnected: " + Context.ConnectionId);
         }
     }
 }

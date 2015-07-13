@@ -1,22 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Threading;
-using Microsoft.AspNet.SignalR.Client;
-using Microsoft.AspNet.SignalR.Client.Hubs;
 using System.Net.Http;
 using System.Timers;
+using System.Windows;
+using Microsoft.AspNet.SignalR.Client;
 
 namespace DBClient
 {
-    class Client
+    static class Client
     {
-        public static HubConnection Connection { get; set; }
-        public static IHubProxy HubProxy { get; set; }
-        private static System.Timers.Timer timer;
+        private static HubConnection Connection { get; set; }
+        private static IHubProxy HubProxy { get; set; }
+        private static Timer _timer;
 
         public static async void ConnectAsync()
         {
@@ -38,16 +33,16 @@ namespace DBClient
 
         public static void StartSending()
         {
-            timer = new System.Timers.Timer(60);
-            timer.Elapsed += new ElapsedEventHandler(OnTimedEvent);
+            _timer = new Timer(60);
+            _timer.Elapsed += OnTimedEvent;
             WriteMessage("Start sending records");
-            timer.Start();
+            _timer.Start();
         }
 
         public static void StopSending()
         {
             WriteMessage("Stop sending records");
-            timer.Stop();
+            _timer.Stop();
         }
 
         private static void OnTimedEvent(object source, ElapsedEventArgs e)
@@ -55,11 +50,11 @@ namespace DBClient
             SendRecord();
         }
 
-        public static void SendRecord()
+        private static void SendRecord()
         {
             var random = new Random();
-            var dataLength = 128;
-            byte[] array = new byte[dataLength * random.Next(1, 3)];
+            const int dataLength = 128;
+            var array = new byte[dataLength * random.Next(1, 3)];
             random.NextBytes(array);
             HubProxy.Invoke("WriteRecord", random.Next(1, 1000), random.Next(1, 10), array);
         }
@@ -67,10 +62,10 @@ namespace DBClient
         public static void GetRecords()
         {
             var random = new Random();
-            var randomQuery = String.Format("sourceid = {0} AND sourcetype = {1}", random.Next(1, 1000), random.Next(1, 10));
+            var randomQuery = string.Format("sourceid = {0} AND sourcetype = {1}", random.Next(1, 1000), random.Next(1, 10));
             WriteMessage("Get " + randomQuery);
             HubProxy.Invoke("GetRecords", randomQuery);
-            HubProxy.On<string>("Response", (message) => WriteMessage(String.Format("{0}\r", message)));
+            HubProxy.On<List<string>>("Response", message => message.ForEach(item => WriteMessage(string.Format("{0}\r", item))));
         }
 
         private static void WriteMessage(string message)
