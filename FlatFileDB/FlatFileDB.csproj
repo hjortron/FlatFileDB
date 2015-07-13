@@ -78,6 +78,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Model\DatetmeTrie.cs" />
     <Compile Include="Model\DBService.cs" />
     <Compile Include="Model\Record.cs" />
     <Compile Include="Model\TableInfo.cs" />
