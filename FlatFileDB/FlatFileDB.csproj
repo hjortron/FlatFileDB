@@ -79,6 +79,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DataBaseManager.cs" />
+    <Compile Include="Model\DatetmeTrie.cs" />
     <Compile Include="Model\Record.cs" />
     <Compile Include="Model\TableInfo.cs" />
     <Compile Include="Program.cs" />
