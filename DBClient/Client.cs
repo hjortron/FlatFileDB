@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Timers;
 using System.Windows;
 using Microsoft.AspNet.SignalR.Client;
+using AppSettings = DBClient.Properties.Settings;
 
 namespace DBClient
 {
@@ -15,7 +16,7 @@ namespace DBClient
 
         public static async void ConnectAsync()
         {
-            Connection = new HubConnection("http://localhost:8080");
+            Connection = new HubConnection(AppSettings.Default.ServerUrl);
             Connection.Closed += Connection_Closed;
             HubProxy = Connection.CreateHubProxy("MyHub");
             try

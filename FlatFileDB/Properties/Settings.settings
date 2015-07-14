@@ -1,0 +1,33 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="FlatFileDB.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="TableName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">data</Value>
+    </Setting>
+    <Setting Name="DbDataFile" Type="System.String" Scope="User">
+      <Value Profile="(Default)">dbInf.dbi</Value>
+    </Setting>
+    <Setting Name="DbFolderName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">DB</Value>
+    </Setting>
+    <Setting Name="TablesFolderName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Tables</Value>
+    </Setting>
+    <Setting Name="DataTableExtension" Type="System.String" Scope="User">
+      <Value Profile="(Default)">.ftd</Value>
+    </Setting>
+    <Setting Name="InfoTableExtension" Type="System.String" Scope="User">
+      <Value Profile="(Default)">.fti</Value>
+    </Setting>
+    <Setting Name="DataTableSize" Type="System.Int64" Scope="User">
+      <Value Profile="(Default)">20971520</Value>
+    </Setting>
+    <Setting Name="ServerUrl" Type="System.String" Scope="User">
+      <Value Profile="(Default)">http://localhost:8080</Value>
+    </Setting>
+    <Setting Name="DataMinLength" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">128</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

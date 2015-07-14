@@ -21,13 +21,16 @@ namespace FlatFileDB.Model
         }
 
         public TableInfo(string fileName, long startPos)
-        {
+        {         
             if (File.Exists(fileName + ".fti"))
             {
-                var tableInf = (TableInfo)Tools.Deserialize(fileName + ".fti");
-                _recordsPositions = tableInf._recordsPositions;
-                StartOffset = tableInf.StartOffset;
-                _fileName = tableInf._fileName;
+                using (var fileStream = new FileStream(fileName + ".fti", FileMode.OpenOrCreate))
+                {
+                    var tableInf = (TableInfo) Tools.Deserialize(fileStream);
+                    _recordsPositions = tableInf._recordsPositions;
+                    StartOffset = tableInf.StartOffset;
+                    _fileName = tableInf._fileName;
+                }
             }
             else
             {

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Hosting;
+using AppSettings = FlatFileDB.Properties.Settings;
 using Owin;
 
 namespace FlatFileDB
@@ -16,18 +17,12 @@ namespace FlatFileDB
         {
             try
             {
-                SignalR = WebApp.Start("http://localhost:8080");
+                SignalR = WebApp.Start(AppSettings.Default.ServerUrl);
             }
             catch (TargetInvocationException)
             {
-                //Dispatcher.Invoke(() =>
-                //Console.WriteLine("A server is already running"));
-                //Dispatcher.Invoke(() => ((MainWindow)Application.Current.MainWindow).buttonStart.IsEnabled = true);
-                //return;
-            }
-            //Dispatcher.Invoke(() => .buttonStop.IsEnabled = true));
-            //Dispatcher.Invoke(() =>
-            //((MainWindow)Application.Current.MainWindow).WriteToConsole("Server started at " + serverName));
+                
+            }          
         }
     }
 
@@ -44,12 +39,12 @@ namespace FlatFileDB
     {
         public void WriteRecord(int sourceId, int sourceType, byte[] data)
         {
-            Program.DbService.AddRecord(sourceId, sourceType, data);
+            Program.DataBaseManager.AddRecord(sourceId, sourceType, data);
         }
 
         public void GetRecords(string query)
         {
-            var result = Program.DbService.Read(query);
+            var result = Program.DataBaseManager.Read(query);
             if (result.Count == 0)
             {
                 Clients.Caller.Response("No result");
