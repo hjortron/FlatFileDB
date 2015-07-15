@@ -33,7 +33,7 @@ namespace FlatFileDB
         }
 
         public static object Deserialize(FileStream stream)
-        {            
+        {
             try
             {
                 var formatter = new BinaryFormatter();
@@ -44,7 +44,7 @@ namespace FlatFileDB
             {
                 Console.WriteLine("Failed to deserialize. Reason: " + e.Message);
                 throw;
-            }                     
+            }
         }
 
         public static Record FromByteArray(byte[] arrBytes)
@@ -89,8 +89,8 @@ namespace FlatFileDB
         {
             return
                 query.ToLower()
-                    .Split(new[] {" and "}, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(element => element.Split(new[] {'='}, StringSplitOptions.RemoveEmptyEntries));
+                    .Split(new[] { " and " }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(element => element.Split(new[] { '=' }, StringSplitOptions.RemoveEmptyEntries));
         }
     }
 }

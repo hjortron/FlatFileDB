@@ -14,12 +14,15 @@ namespace FlatFileDB.Model
     {      
         public readonly int SourceId;
         public readonly int SourceType;
+        [NonSerialized]
+        public readonly DateTime creationDate;
         private readonly byte[] _data;
         private readonly string _timestamp;
 
         public Record(int sourceId, int sourceType, byte[] data)
-        {              
-            _timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+        {
+            creationDate = DateTime.UtcNow;
+            _timestamp = creationDate.ToString("yyyyMMddHHmmss");
             SourceId = sourceId;
             SourceType = sourceType;
             _data = data;

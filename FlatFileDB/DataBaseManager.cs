@@ -14,6 +14,7 @@ namespace FlatFileDB
         private int _tablesCount;
         private readonly Dictionary<int, List<long>> _sourceIds;
         private readonly Dictionary<int, List<long>> _sourceTypes;
+        private readonly DatetmeTrie _datetimeIndexer;
         private readonly LinkedList<long> _tables;
 
         [NonSerialized]
@@ -29,6 +30,7 @@ namespace FlatFileDB
                     _recordsCount = dbInf._recordsCount;
                     _sourceIds = dbInf._sourceIds;
                     _sourceTypes = dbInf._sourceTypes;
+                    _datetimeIndexer = dbInf._datetimeIndexer;
                     _tables = dbInf._tables;
                     _tablesCount = dbInf._tablesCount;
                 }
@@ -37,6 +39,7 @@ namespace FlatFileDB
             {
                 _sourceIds = new Dictionary<int, List<long>>();
                 _sourceTypes = new Dictionary<int, List<long>>();
+                _datetimeIndexer = new DatetmeTrie();
                 _tables = new LinkedList<long>();
             }
 
@@ -63,6 +66,7 @@ namespace FlatFileDB
 
             _sourceIds.InsertOrUpdate(record.SourceId, id);
             _sourceTypes.InsertOrUpdate(record.SourceType, id);
+            _datetimeIndexer.AddRecord(record.creationDate, new[] { id });
         }
 
         public List<string> GetRecords(string query)
@@ -152,11 +156,6 @@ namespace FlatFileDB
             _tables.AddLast(_currentFile.StartOffset);
             Tools.Serialize(AppSettings.Default.DbDataFile, this);
             _currentFile.SaveFile();
-        }
-
-        private class DbJournal
-        {
-            
         }
     }
 }
