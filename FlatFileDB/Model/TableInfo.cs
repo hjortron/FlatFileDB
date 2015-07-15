@@ -68,7 +68,15 @@ namespace FlatFileDB.Model
                 var recordPos = _recordsPositions.ElementAt(index);
                 if (b.BaseStream.Length > recordPos)
                 {
-                    var bytesCount = _recordsPositions[index + 1] - recordPos;
+                    long bytesCount;
+                    if (index+1 == _recordsPositions.Count)
+                    {
+                        bytesCount = b.BaseStream.Length - recordPos;
+                    }
+                    else
+                    {
+                        bytesCount = _recordsPositions[index + 1] - recordPos;
+                    }                   
                     _fileContent.Position = recordPos;
                     b.BaseStream.Seek(recordPos, SeekOrigin.Begin);
                     var v = b.ReadBytes((int)bytesCount);

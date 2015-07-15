@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
 using Microsoft.AspNet.SignalR.Client;
@@ -13,19 +15,22 @@ namespace DBClient
         private static HubConnection Connection { get; set; }
         private static IHubProxy HubProxy { get; set; }
         private static Timer _timer;
+        private static bool _isConnected;
 
-        public static async void ConnectAsync()
+        public static void ConnectAsync()
         {
             Connection = new HubConnection(AppSettings.Default.ServerUrl);
             Connection.Closed += Connection_Closed;
             HubProxy = Connection.CreateHubProxy("MyHub");
             try
             {
-                await Connection.Start();
+                Connection.Start();
+                _isConnected = true;
             }
             catch (HttpRequestException)
             {
                 WriteMessage("Unable to connect to server: Start server before connecting clients.");
+                _isConnected = false;
                 return;
             }
 
@@ -48,24 +53,50 @@ namespace DBClient
 
         private static void OnTimedEvent(object source, ElapsedEventArgs e)
         {
-            SendRecord();
+            var random = new Random();
+            const int dataLength = 128;
+            var array = new byte[dataLength * random.Next(1, 3)];
+            random.NextBytes(array);
+            SendRecord(random.Next(1, 1000), random.Next(1, 10));            
         }
 
-        private static void SendRecord()
+        public static void SendRecord(int sourceId, int sourceType)
         {
             var random = new Random();
             const int dataLength = 128;
             var array = new byte[dataLength * random.Next(1, 3)];
             random.NextBytes(array);
-            HubProxy.Invoke("WriteRecord", random.Next(1, 1000), random.Next(1, 10), array);
+            HubProxy.Invoke("WriteRecord", sourceId, sourceType, array);
         }
 
-        public static void GetRecords()
+        public static void GetRandomRecords()
         {
             var random = new Random();
-            var randomQuery = string.Format("sourceid = {0} AND sourcetype = {1}", random.Next(1, 1000), random.Next(1, 10));
-            WriteMessage("Get " + randomQuery);
-            HubProxy.Invoke("GetRecords", randomQuery);
+            GetRecords(FormatQueryString(random.Next(1, 1000), random.Next(1, 10)));           
+        }
+
+        public static string FormatQueryString(int? sourceId = null, int? sourceType = null)
+        {
+            var queryBuilder = new StringBuilder();
+            if (sourceId != null)
+            {
+                queryBuilder.Append(string.Format("sourceid = {0}", sourceId));
+            }
+            if (sourceType != null)
+            {
+                if (queryBuilder.Length > 0)
+                {
+                    queryBuilder.Append(" AND ");
+                }
+                queryBuilder.Append(string.Format("sourcetype = {0}", sourceType));
+            }
+            return queryBuilder.ToString();
+        }
+
+        public async static void GetRecords(string query)
+        {
+            WriteMessage("Get " + query);
+            await HubProxy.Invoke("GetRecords", query);
             HubProxy.On<List<string>>("Response", message => message.ForEach(item => WriteMessage(string.Format("{0}\r", item))));
         }
 
@@ -77,6 +108,7 @@ namespace DBClient
 
         private static void Connection_Closed()
         {
+            _isConnected = false;
             WriteMessage("Disconnected!");
         }
     }

@@ -44,7 +44,7 @@ namespace FlatFileDB
 
         public void GetRecords(string query)
         {
-            var result = Program.DataBaseManager.Read(query);
+            var result = Program.DataBaseManager.GetRecords(query);
             if (result.Count == 0)
             {
                 Clients.Caller.Response("No result");

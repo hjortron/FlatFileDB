@@ -14,7 +14,7 @@ namespace FlatFileDB
             Task.Run(() => Server.StartServer());           
             AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
 
-            InsertRandomRecords(100000); 
+            //InsertRandomRecords(100000); 
    
             Console.ReadLine();
         }

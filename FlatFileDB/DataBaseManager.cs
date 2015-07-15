@@ -65,7 +65,7 @@ namespace FlatFileDB
             _sourceTypes.InsertOrUpdate(record.SourceType, id);
         }
 
-        public List<string> Read(string query)
+        public List<string> GetRecords(string query)
         {
             var idsList = new List<long>();
             foreach (var fieldQ in Tools.ParseQuery(query))
@@ -89,7 +89,7 @@ namespace FlatFileDB
                 }
             }
 
-            var diction = GetRecords(idsList);
+            var diction = GetRecordsPositions(idsList);
 
             var result = new List<string>();
             foreach (var file in diction)
@@ -108,7 +108,7 @@ namespace FlatFileDB
             return new TableInfo(Tools.GetInfoTableName(tableIndex), _tables.ElementAtOrDefault(tableIndex));
         }
 
-        private Dictionary<int, List<long>> GetRecords(List<long> recordsIds)
+        private Dictionary<int, List<long>> GetRecordsPositions(List<long> recordsIds)
         {
             Array.Sort(recordsIds.ToArray());
             var resultDictionary = new Dictionary<int, List<long>>();
