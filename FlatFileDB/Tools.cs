@@ -92,5 +92,10 @@ namespace FlatFileDB
                     .Split(new[] { " and " }, StringSplitOptions.RemoveEmptyEntries)
                     .Select(element => element.Split(new[] { '=' }, StringSplitOptions.RemoveEmptyEntries));
         }
+
+        public static IEnumerable<int> AsArrayOfIntegers(this DateTime date)
+        {
+            return new[] { date.Year, date.Month, date.Day, date.Hour, date.Minute };
+        }
     }
 }

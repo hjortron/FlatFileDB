@@ -14,7 +14,7 @@ namespace FlatFileDB
         private int _tablesCount;
         private readonly Dictionary<int, List<long>> _sourceIds;
         private readonly Dictionary<int, List<long>> _sourceTypes;
-        private readonly DatetmeTrie _datetimeIndexer;
+        private readonly DatetimeTrie _datetimeIndexer;
         private readonly LinkedList<long> _tables;
 
         [NonSerialized]
@@ -39,7 +39,7 @@ namespace FlatFileDB
             {
                 _sourceIds = new Dictionary<int, List<long>>();
                 _sourceTypes = new Dictionary<int, List<long>>();
-                _datetimeIndexer = new DatetmeTrie();
+                _datetimeIndexer = new DatetimeTrie();
                 _tables = new LinkedList<long>();
             }
 
